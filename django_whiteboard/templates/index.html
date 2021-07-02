@@ -1,0 +1,24 @@
+{% load static %}
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Django Whiteboard</title>
+
+  <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
+
+</head>
+
+<body style="background-color: #f1f1f1;">
+  <canvas id="foo" width="600" height="600" style="background-color: white;">
+
+  </canvas>
+  <script>
+    window.boardId = "{{board_id}}";
+  </script>
+  <script src="{% static 'web/index.js' %}"></script>
+</body>
+</html>

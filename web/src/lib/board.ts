@@ -1,12 +1,14 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
 import Konva from "konva";
-import { BoardObject, ReceivedWebsocketMessage, BoardPath, BoardMode, ModeHandler } from "./types";
+import {
+  BoardObject,
+  ReceivedWebsocketMessage,
+  BoardMode,
+  ModeHandler,
+} from "./types";
 import { objToKonva } from "./convert";
-import { KonvaEventObject } from "konva/lib/Node";
 
-import "./styles/index.scss"
-import { DrawHandler } from "./handlers";
-
+import { DrawHandler, SelectHandler } from "./handlers";
 
 function generateId() {
   // https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
@@ -25,10 +27,10 @@ export class Board {
   sendingObjects = new Map<string, BoardObject>();
   sessionId = generateId();
   mode = BoardMode.DRAW;
-  modeHandlers: {[k in BoardMode]: ModeHandler} = {
+  modeHandlers: { [k in BoardMode]: ModeHandler } = {
     [BoardMode.DRAW]: new DrawHandler(this),
-    [BoardMode.SELECT]: new DrawHandler(this),
-  }
+    [BoardMode.SELECT]: new SelectHandler(this),
+  };
   constructor(private container: HTMLDivElement, private boardId: string) {
     this.stage = new Konva.Stage({
       container: this.container,
@@ -54,13 +56,13 @@ export class Board {
     currentModeHandler.exit();
     modeHandler.enter();
     this.mode = mode;
-  }
+  };
   onSocketMessage = (event: MessageEvent) => {
     const data = event.data;
     const payload = JSON.parse(data) as ReceivedWebsocketMessage;
     if (payload.type === "INITIAL_DATA") {
       for (const obj of payload.data.objects) {
-        this.layer.add(objToKonva(obj))
+        this.layer.add(objToKonva(obj));
       }
       this.draw();
     } else if (payload.type === "ADD_OBJECT") {
@@ -79,40 +81,39 @@ export class Board {
         "Content-Type": "application/json",
         "session-id": this.sessionId,
       },
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("Not ok");
-        return response.json();
-      })
+    }).then((response) => {
+      if (!response.ok) throw new Error("Not ok");
+      return response.json();
+    });
   };
   sendCurrentDrawingObject = async () => {
     const obj = this.currentDrawingObject;
     this.currentDrawingObject = null;
     const id = generateId();
     try {
-      this.sendingObjects.set(id,obj);
+      this.sendingObjects.set(id, obj);
       await this.sendBoardObject(obj, id);
       this.layer.add(objToKonva(obj));
     } catch (error) {
-      console.error(error)
+      console.error(error);
     }
     this.sendingObjects.delete(id);
     this.draw();
   };
-  
+
   draw = () => {
     // this.layer.draw();
     this.drawingLayer.destroyChildren();
     this.pendingLayer.destroyChildren();
     if (this.currentDrawingObject) {
-      this.drawingLayer.add(objToKonva(this.currentDrawingObject))
+      this.drawingLayer.add(objToKonva(this.currentDrawingObject));
     }
     if (this.pendingLayer) {
-    for (const obj of this.sendingObjects.values()) {
-      const line = objToKonva(obj);
-      line.stroke("red");
-      this.pendingLayer.add(line);
-    }
+      for (const obj of this.sendingObjects.values()) {
+        const line = objToKonva(obj);
+        line.stroke("red");
+        this.pendingLayer.add(line);
+      }
     }
   };
   run = () => {
@@ -120,10 +121,9 @@ export class Board {
   };
 }
 
-const element = document.getElementById("container") as HTMLDivElement;
-const board = new Board(element, (window as any).boardId);
-board.run();
-
+// const element = document.getElementById("container") as HTMLDivElement;
+// const board = new Board(element, (window as any).boardId);
+// board.run();
 
 // @ts-ignore
-window.board = board
+// window.board = board;

@@ -19,7 +19,6 @@ async def add_board_object(request):
     payload = request.payload
     board_id = payload["boardId"]
     object_data = payload["objectData"]
-    await sleep(1)
     await database_sync_to_async(BoardObject.from_json)(board_id, object_data)
     await channel_layer.group_send(
         BoardConsumer.get_group_name(board_id),

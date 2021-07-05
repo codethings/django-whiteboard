@@ -8,14 +8,14 @@
 
   <title>Django Whiteboard</title>
 
-  <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
+  <link rel="stylesheet" href="{% static 'web/index.css' %}">
 
 </head>
 
 <body style="background-color: #f1f1f1;">
-  <canvas id="foo" width="600" height="600" style="background-color: white;">
+  <div id="container">
 
-  </canvas>
+  </div>
   <script>
     window.boardId = "{{board_id}}";
   </script>

@@ -1,57 +1,70 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
+import Konva from "konva";
+import { BoardObject, ReceivedWebsocketMessage, BoardPath, BoardMode, ModeHandler } from "./types";
+import { objToKonva } from "./convert";
+import { KonvaEventObject } from "konva/lib/Node";
 
-type Point = [number, number];
+import "./styles/index.scss"
+import { DrawHandler } from "./handlers";
 
-type BoardPath = {
-  type: "path";
-  points: Point[];
-};
-
-type BoardObject = BoardPath;
-
-type ReceivedWebsocketMessage =
-  | {
-      type: "INITIAL_DATA";
-      data: {
-        objects: BoardObject[];
-      };
-    }
-  | {
-      type: "ADD_OBJECT";
-      data: { object: BoardObject };
-    };
 
 function generateId() {
   // https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
   return Math.random().toString(36).substring(7);
 }
 
-class Board {
-  objects: BoardObject[] = [];
+export class Board {
+  stage: Konva.Stage;
+  layer = new Konva.Layer({});
+  drawingLayer = new Konva.Layer();
+  pendingLayer = new Konva.Layer();
+  trLayer = new Konva.Layer();
+  tr = new Konva.Transformer();
   currentDrawingObject?: BoardObject;
-  context: CanvasRenderingContext2D;
-  elementPosition: Point;
   socket: ReconnectingWebSocket;
   sendingObjects = new Map<string, BoardObject>();
   sessionId = generateId();
-  constructor(private element: HTMLCanvasElement, private boardId: string) {
-    this.context = element.getContext("2d");
-    const { x, y } = element.getBoundingClientRect();
-    this.elementPosition = [x, y];
+  mode = BoardMode.DRAW;
+  modeHandlers: {[k in BoardMode]: ModeHandler} = {
+    [BoardMode.DRAW]: new DrawHandler(this),
+    [BoardMode.SELECT]: new DrawHandler(this),
+  }
+  constructor(private container: HTMLDivElement, private boardId: string) {
+    this.stage = new Konva.Stage({
+      container: this.container,
+      width: 600,
+      height: 600,
+    });
+    this.stage.add(this.layer);
+    this.stage.add(this.drawingLayer);
+    this.stage.add(this.pendingLayer);
+    this.stage.add(this.trLayer);
+    this.trLayer.add(this.tr);
+    this.layer.draw();
     const scheme = window.location.protocol === "http:" ? "ws" : "wss";
     this.socket = new ReconnectingWebSocket(
       `${scheme}://${window.location.host}/board/${this.boardId}?sessionId=${this.sessionId}`
     );
     this.socket.addEventListener("message", this.onSocketMessage);
+    this.changeMode(BoardMode.DRAW);
+  }
+  changeMode = (mode: BoardMode) => {
+    const modeHandler = this.modeHandlers[mode];
+    const currentModeHandler = this.modeHandlers[this.mode];
+    currentModeHandler.exit();
+    modeHandler.enter();
+    this.mode = mode;
   }
   onSocketMessage = (event: MessageEvent) => {
     const data = event.data;
     const payload = JSON.parse(data) as ReceivedWebsocketMessage;
     if (payload.type === "INITIAL_DATA") {
-      this.objects = payload.data.objects;
+      for (const obj of payload.data.objects) {
+        this.layer.add(objToKonva(obj))
+      }
       this.draw();
     } else if (payload.type === "ADD_OBJECT") {
-      this.objects.push(payload.data.object);
+      this.layer.add(objToKonva(payload.data.object));
       this.draw();
     }
   };
@@ -79,87 +92,35 @@ class Board {
     try {
       this.sendingObjects.set(id,obj);
       await this.sendBoardObject(obj, id);
-      this.objects.push(obj);
+      this.layer.add(objToKonva(obj));
     } catch (error) {
       console.error(error)
     }
     this.sendingObjects.delete(id);
     this.draw();
   };
-  onMouseDown = (event: MouseEvent) => {
-    console.log(event);
-    const x = event.clientX - this.elementPosition[0];
-    const y = event.clientY - this.elementPosition[1];
-    this.currentDrawingObject = {
-      type: "path",
-      points: [[x, y]],
-    };
-    this.draw();
-  };
-  onMouseUp = () => {
-    if (this.currentDrawingObject) {
-      this.sendCurrentDrawingObject();
-      this.draw();
-    }
-  };
-  onMouseMove = (event: MouseEvent) => {
-    const x = event.clientX - this.elementPosition[0];
-    const y = event.clientY - this.elementPosition[1];
-    if (!this.currentDrawingObject) return;
-    if (this.currentDrawingObject.type === "path") {
-      this.currentDrawingObject.points.push([x, y]);
-    }
-    this.draw();
-  };
+  
   draw = () => {
-    const { context, element } = this;
-    const { width, height } = element.getBoundingClientRect();
-    context.clearRect(0, 0, width, height);
-    for (const obj of this.objects) {
-      this.drawObject(obj);
-    }
+    // this.layer.draw();
+    this.drawingLayer.destroyChildren();
+    this.pendingLayer.destroyChildren();
     if (this.currentDrawingObject) {
-      this.drawObject(this.currentDrawingObject);
+      this.drawingLayer.add(objToKonva(this.currentDrawingObject))
     }
+    if (this.pendingLayer) {
     for (const obj of this.sendingObjects.values()) {
-      this.drawObject(obj, {inflight: true});
+      const line = objToKonva(obj);
+      line.stroke("red");
+      this.pendingLayer.add(line);
     }
-  };
-  drawObject = (obj: BoardObject, options: {inflight: boolean} = {inflight: false}) => {
-    if (obj.type === "path") {
-      this.drawPath(obj, options);
     }
-  };
-  drawPath = (obj: BoardPath, options: {inflight: boolean}) => {
-    if (obj.points.length === 0) return;
-    const context = this.context;
-    context.closePath();
-    context.beginPath();
-    if (options.inflight) {
-      context.strokeStyle = "red";
-    } else {
-      context.strokeStyle = "black";
-    }
-    context.lineWidth = 1;
-    const firstPoint = obj.points[0];
-    const rest = obj.points.slice(1);
-    context.moveTo(firstPoint[0], firstPoint[1]);
-    for (const point of rest) {
-      const [x, y] = point;
-      context.lineTo(x, y);
-    }
-    context.stroke();
   };
   run = () => {
-    this.element.addEventListener("mousedown", this.onMouseDown);
-    this.element.addEventListener("mouseup", this.onMouseUp);
-    this.element.addEventListener("mousemove", this.onMouseMove);
-    this.element.addEventListener("mouseleave", this.onMouseUp);
     this.draw();
   };
 }
 
-const element = document.getElementById("foo") as HTMLCanvasElement;
+const element = document.getElementById("container") as HTMLDivElement;
 const board = new Board(element, (window as any).boardId);
 board.run();
 

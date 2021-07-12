@@ -1,3 +1,5 @@
+import Konva from "konva";
+
 export type Point = [number, number];
 
 export type BoardPath = {
@@ -5,7 +7,10 @@ export type BoardPath = {
   points: Point[];
 };
 
-export type BoardObject = BoardPath;
+export type BoardObjectAttrs = {
+  transform?: Konva.Transform["m"];
+};
+export type BoardObject = BoardPath & { id?: string } & BoardObjectAttrs;
 
 export type ReceivedWebsocketMessage =
   | {
@@ -17,6 +22,10 @@ export type ReceivedWebsocketMessage =
   | {
       type: "ADD_OBJECT";
       data: { object: BoardObject };
+    }
+    | {
+      type: "SET_OBJECTS_ATTRS",
+      data: {objectsAttrs: {[key: string]: BoardObjectAttrs}}
     };
 
 export type ModeHandler = {

@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from whiteboard.views import add_board_object
+from whiteboard.views import add_board_object, set_objects_attrs
 
 def preview(request, id=1):
     from django.shortcuts import render
@@ -26,5 +26,6 @@ urlpatterns = [
     path('', preview),
     path('b/<int:id>', preview),
     path('add-object', add_board_object),
+    path('set-objects-attrs', set_objects_attrs),
     path('admin/', admin.site.urls),
 ]

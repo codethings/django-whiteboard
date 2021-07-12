@@ -1,7 +1,7 @@
 import Konva from "konva";
 import { KonvaEventObject } from "konva/lib/Node";
 import { Board } from "./board";
-import { ModeHandler } from "./types";
+import { BoardObjectAttrs, ModeHandler } from "./types";
 
 export class DrawHandler implements ModeHandler {
   constructor(private board: Board) {}
@@ -57,6 +57,7 @@ export class SelectHandler implements ModeHandler {
     this.board.stage.on("mousemove touchmove", this.onMouseMove);
     this.board.stage.on("mouseup touchend", this.onMouseUp);
     this.board.trLayer.add(this.selectionRect);
+    this.board.tr.on("transformend", this.onTransformEnd);
   };
   exit = () => {
     this.board.stage.off("click tap", this.onClick);
@@ -66,9 +67,32 @@ export class SelectHandler implements ModeHandler {
     this.selectionRect.remove();
     this.board.tr.nodes([]);
   };
+  onTransformEnd = () => {
+    const nodes = this.board.tr.nodes();
+    // [[id, {transform: [number,..]}]]
+    const updates: [string, BoardObjectAttrs][] = [];
+    for (const node of nodes) {
+      updates.push([node.id(), {transform: node.getTransform().m}])
+    }
+    fetch("/set-objects-attrs", {
+      method: "POST",
+      body: JSON.stringify({
+        boardId: this.board.boardId,
+        objectsAttrs: updates,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "session-id": this.board.sessionId,
+      },
+    }).then((response) => {
+      if (!response.ok) throw new Error("Not ok");
+      return response.json();
+    }).then((data) => {
+      return console.log(data)
+    });
+  }
   onMouseDown = () => {
     if (this.board.tr.nodes().length) {
-      console.log("ignore");
       return;
     };
     const { x, y } = this.board.stage.getPointerPosition();
@@ -112,11 +136,11 @@ export class SelectHandler implements ModeHandler {
     this.board.tr.nodes(selected);
   };
   onClick = (e: KonvaEventObject<MouseEvent>) => {
-    if (!this.selectionRect.visible()) {
-      return;
-    }
     if (e.target === this.board.stage) {
       this.board.tr.nodes([]);
+      return;
+    }
+    if (!this.selectionRect.visible()) {
       return;
     }
 

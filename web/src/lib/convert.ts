@@ -1,14 +1,30 @@
 import Konva from "konva";
-import { BoardObject } from "./types";
+import { BoardObject, BoardObjectAttrs } from "./types";
+
+export function applyAttrs(node: Konva.Node, attrs: BoardObjectAttrs) {
+  if (attrs.transform) {
+    const transform = new Konva.Transform(attrs.transform);
+    Object.entries(transform.decompose()).forEach(([k, v]) => {
+      node[k](v);
+    })
+  }
+  return node;
+}
 
 export function objToKonva(obj: BoardObject) {
+  const commomProps = {id: obj.id}
+  let shape: Konva.Shape | null = null;
   switch (obj.type) {
     case "path":
-      return new Konva.Line({
+      shape = new Konva.Line({
         points: obj.points.reduce((acc, coord) => [...acc, ...coord], []),
         stroke: "black",
+        ...commomProps
       });
     default:
-      throw new Error("Don't know how to convert");
+      break
   }
+  if (!shape) throw new Error("don't know how");
+  applyAttrs(shape, obj);
+  return shape;
 }

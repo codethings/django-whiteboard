@@ -6,7 +6,7 @@ import {
   BoardMode,
   ModeHandler,
 } from "./types";
-import { objToKonva } from "./convert";
+import { applyAttrs, objToKonva } from "./convert";
 
 import { DrawHandler, SelectHandler } from "./handlers";
 
@@ -31,7 +31,7 @@ export class Board {
     [BoardMode.DRAW]: new DrawHandler(this),
     [BoardMode.SELECT]: new SelectHandler(this),
   };
-  constructor(private container: HTMLDivElement, private boardId: string) {
+  constructor(private container: HTMLDivElement, public boardId: string) {
     this.stage = new Konva.Stage({
       container: this.container,
       width: 600,
@@ -68,6 +68,13 @@ export class Board {
     } else if (payload.type === "ADD_OBJECT") {
       this.layer.add(objToKonva(payload.data.object));
       this.draw();
+    } else if (payload.type === "SET_OBJECTS_ATTRS") {
+      Object.entries(payload.data.objectsAttrs).forEach(([id, attrs]) => {
+        const node = this.layer.findOne(`#${id}`);
+        // TODO: handle missing node maybe due to ws disconnect/reconnect
+        if (!node) return;
+        applyAttrs(node, attrs);
+      })
     }
   };
   sendBoardObject = async (obj: BoardObject, id: string) => {
@@ -84,6 +91,8 @@ export class Board {
     }).then((response) => {
       if (!response.ok) throw new Error("Not ok");
       return response.json();
+    }).then((data) => {
+      return data.id;
     });
   };
   sendCurrentDrawingObject = async () => {
@@ -92,7 +101,8 @@ export class Board {
     const id = generateId();
     try {
       this.sendingObjects.set(id, obj);
-      await this.sendBoardObject(obj, id);
+      const obj_id = await this.sendBoardObject(obj, id);
+      obj.id = obj_id;
       this.layer.add(objToKonva(obj));
     } catch (error) {
       console.error(error);

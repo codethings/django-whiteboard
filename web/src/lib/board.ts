@@ -31,6 +31,8 @@ export class Board {
     [BoardMode.DRAW]: new DrawHandler(this),
     [BoardMode.SELECT]: new SelectHandler(this),
   };
+  zoomLevel = 1;
+  stagePosition = {x: 0, y: 0};
   constructor(private container: HTMLDivElement, public boardId: string) {
     this.stage = new Konva.Stage({
       container: this.container,
@@ -50,23 +52,29 @@ export class Board {
     this.socket.addEventListener("message", this.onSocketMessage);
     this.changeMode(BoardMode.DRAW);
   }
+  get currentHandler() {
+    return this.modeHandlers[this.mode];
+  }
   changeMode = (mode: BoardMode) => {
     const modeHandler = this.modeHandlers[mode];
-    const currentModeHandler = this.modeHandlers[this.mode];
-    currentModeHandler.exit();
+    this.currentHandler.exit();
     modeHandler.enter();
     this.mode = mode;
   };
+  addShapeToLayer = (shape: Konva.Shape) => {
+    this.layer.add(shape);
+    this.currentHandler.processAddedShape?.(shape);
+  }
   onSocketMessage = (event: MessageEvent) => {
     const data = event.data;
     const payload = JSON.parse(data) as ReceivedWebsocketMessage;
     if (payload.type === "INITIAL_DATA") {
       for (const obj of payload.data.objects) {
-        this.layer.add(objToKonva(obj));
+        this.addShapeToLayer(objToKonva(obj));
       }
       this.draw();
     } else if (payload.type === "ADD_OBJECT") {
-      this.layer.add(objToKonva(payload.data.object));
+      this.addShapeToLayer(objToKonva(payload.data.object));
       this.draw();
     } else if (payload.type === "SET_OBJECTS_ATTRS") {
       Object.entries(payload.data.objectsAttrs).forEach(([id, attrs]) => {
@@ -126,6 +134,28 @@ export class Board {
       }
     }
   };
+  setZoomLevel = (value: number) => {
+    this.zoomLevel = value;
+    this.stage.scale({x: value, y: value});
+  }
+  setStagePosition = (x: number, y: number) => {
+    this.stagePosition = {x, y};
+    this.stage.position(this.stagePosition);
+  }
+  zoomIn = () => {
+    this.setZoomLevel(this.zoomLevel + 0.1);
+  }
+  zoomOut = () => {
+    this.setZoomLevel(this.zoomLevel - 0.1);
+  }
+  moveX = (value: number) => {
+    const {x, y} = this.stagePosition;
+    this.setStagePosition(x + value, y);
+  }
+  moveY = (value: number) => {
+    const {x, y} = this.stagePosition;
+    this.setStagePosition(x, y + value);
+  }
   run = () => {
     this.draw();
   };

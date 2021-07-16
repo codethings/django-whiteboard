@@ -42,6 +42,30 @@ function ReactBoard({ boardId }: { boardId: string }) {
         >
           select
         </button>
+        <button onClick={() => {
+          boardRef.current.zoomIn();
+        }}>
+          zoom in
+        </button>
+        <button onClick={() => {
+          boardRef.current.zoomOut();
+        }}>
+          zoom out
+        </button>
+        <button
+          onClick={() => {
+            boardRef.current.moveX(-5);
+          }}
+        >
+          move right
+        </button>
+        <button
+          onClick={() => {
+            boardRef.current.moveY(-5);
+          }}
+        >
+          move down
+        </button>
       </div>
     </div>
   );

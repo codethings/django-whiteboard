@@ -19,7 +19,7 @@ export class DrawHandler implements ModeHandler {
   };
   onMouseDown = () => {
     const { board } = this;
-    const { x, y } = board.stage.getPointerPosition();
+    const { x, y } = board.stage.getRelativePointerPosition();
     board.currentDrawingObject = {
       type: "path",
       points: [[x, y]],
@@ -35,7 +35,7 @@ export class DrawHandler implements ModeHandler {
   };
   onMouseMove = () => {
     const { board } = this;
-    const { x, y } = board.stage.getPointerPosition();
+    const { x, y } = board.stage.getRelativePointerPosition();
     if (!board.currentDrawingObject) return;
     if (board.currentDrawingObject.type === "path") {
       board.currentDrawingObject.points.push([x, y]);
@@ -58,21 +58,32 @@ export class SelectHandler implements ModeHandler {
     this.board.stage.on("mouseup touchend", this.onMouseUp);
     this.board.trLayer.add(this.selectionRect);
     this.board.tr.on("transformend", this.onTransformEnd);
+    this.board.stage.on("dragend", this.onTransformEnd);
+    this.board.layer.children.forEach((shape) => {
+      shape.draggable(true);
+    });
   };
   exit = () => {
     this.board.stage.off("click tap", this.onClick);
     this.board.stage.off("mousedown touchstart", this.onMouseDown);
     this.board.stage.off("mousemove touchmove", this.onMouseMove);
     this.board.stage.off("mouseup touchend", this.onMouseUp);
+    this.board.stage.off("dragend", this.onTransformEnd);
     this.selectionRect.remove();
+    this.board.layer.children.forEach((shape) => {
+      shape.draggable(false);
+    });
     this.board.tr.nodes([]);
+  };
+  processAddedShape = (shape: Konva.Shape) => {
+    shape.draggable(true);
   };
   onTransformEnd = () => {
     const nodes = this.board.tr.nodes();
     // [[id, {transform: [number,..]}]]
     const updates: [string, BoardObjectAttrs][] = [];
     for (const node of nodes) {
-      updates.push([node.id(), {transform: node.getTransform().m}])
+      updates.push([node.id(), { transform: node.getTransform().m }]);
     }
     fetch("/set-objects-attrs", {
       method: "POST",
@@ -84,18 +95,20 @@ export class SelectHandler implements ModeHandler {
         "Content-Type": "application/json",
         "session-id": this.board.sessionId,
       },
-    }).then((response) => {
-      if (!response.ok) throw new Error("Not ok");
-      return response.json();
-    }).then((data) => {
-      return console.log(data)
-    });
-  }
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Not ok");
+        return response.json();
+      })
+      .then((data) => {
+        return console.log(data);
+      });
+  };
   onMouseDown = () => {
     if (this.board.tr.nodes().length) {
       return;
-    };
-    const { x, y } = this.board.stage.getPointerPosition();
+    }
+    const { x, y } = this.board.stage.getRelativePointerPosition();
     this.selectionRectCoords = [x, y, x, y];
     this.selectionRect.visible(true);
     this.selectionRect.width(0);
@@ -106,7 +119,7 @@ export class SelectHandler implements ModeHandler {
       return;
     }
 
-    const { x, y } = this.board.stage.getPointerPosition();
+    const { x, y } = this.board.stage.getRelativePointerPosition();
     this.selectionRectCoords[2] = x;
     this.selectionRectCoords[3] = y;
 
@@ -130,9 +143,9 @@ export class SelectHandler implements ModeHandler {
 
     const shapes = this.board.layer.children;
     const box = this.selectionRect.getClientRect();
-    var selected = shapes.filter((shape) =>
-      Konva.Util.haveIntersection(box, shape.getClientRect())
-    );
+    var selected = shapes.filter((shape) => {
+      return Konva.Util.haveIntersection(box, shape.getClientRect());
+    });
     this.board.tr.nodes(selected);
   };
   onClick = (e: KonvaEventObject<MouseEvent>) => {

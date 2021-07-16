@@ -31,6 +31,7 @@ export type ReceivedWebsocketMessage =
 export type ModeHandler = {
   enter: () => void;
   exit: () => void;
+  processAddedShape?: (shape: Konva.Shape) => void;
 };
 
 export enum BoardMode {

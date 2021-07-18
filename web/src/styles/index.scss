@@ -1,5 +1,14 @@
-#container {
-    > .konvajs-content {
+body {
+    margin: 0;
+}
+
+.react-board-wrapper {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    .board-container {
+        flex-grow: 1;
+        min-height: 0;
         background: white;
     }
 }

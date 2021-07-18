@@ -1,4 +1,5 @@
 import Konva from "konva";
+import { Vector2d } from "konva/lib/types";
 
 export type Point = [number, number];
 
@@ -23,10 +24,14 @@ export type ReceivedWebsocketMessage =
       type: "ADD_OBJECT";
       data: { object: BoardObject };
     }
-    | {
-      type: "SET_OBJECTS_ATTRS",
-      data: {objectsAttrs: {[key: string]: BoardObjectAttrs}}
-    };
+  | {
+      type: "SET_OBJECTS_ATTRS";
+      data: { objectsAttrs: { [key: string]: BoardObjectAttrs } };
+    }
+  | {
+    type: "SET_CURSOR";
+    data: RemoteCursor
+  };
 
 export type ModeHandler = {
   enter: () => void;
@@ -37,4 +42,10 @@ export type ModeHandler = {
 export enum BoardMode {
   DRAW = "draw",
   SELECT = "select",
+  MOVE = "move",
 }
+
+export type RemoteCursor = {
+  sessionId: string;
+  position?: Vector2d;
+};

@@ -42,6 +42,14 @@ function ReactBoard({ boardId }: { boardId: string }) {
         >
           select
         </button>
+        <button
+          className={opMode === BoardMode.MOVE ? "active" : ""}
+          onClick={() => {
+            setOpMode(BoardMode.MOVE);
+          }}
+        >
+          move
+        </button>
         <button onClick={() => {
           boardRef.current.zoomIn();
         }}>
@@ -51,20 +59,6 @@ function ReactBoard({ boardId }: { boardId: string }) {
           boardRef.current.zoomOut();
         }}>
           zoom out
-        </button>
-        <button
-          onClick={() => {
-            boardRef.current.moveX(-5);
-          }}
-        >
-          move right
-        </button>
-        <button
-          onClick={() => {
-            boardRef.current.moveY(-5);
-          }}
-        >
-          move down
         </button>
       </div>
     </div>

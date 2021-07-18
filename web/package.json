@@ -10,12 +10,14 @@
   "license": "ISC",
   "devDependencies": {
     "@parcel/transformer-sass": "^2.0.0-beta.3.1",
+    "@types/lodash": "^4.14.171",
     "@types/react": "^17.0.13",
     "@types/react-dom": "^17.0.8",
     "parcel": "^2.0.0-beta.3.1"
   },
   "dependencies": {
     "konva": "^8.1.1",
+    "lodash": "^4.17.21",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "reconnecting-websocket": "^4.4.0"

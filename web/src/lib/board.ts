@@ -8,7 +8,8 @@ import {
 } from "./types";
 import { applyAttrs, objToKonva } from "./convert";
 
-import { DrawHandler, SelectHandler } from "./handlers";
+import { DrawHandler, MoveHandler, SelectHandler } from "./handlers/index";
+import CursorService from "./cursor";
 
 function generateId() {
   // https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
@@ -30,9 +31,11 @@ export class Board {
   modeHandlers: { [k in BoardMode]: ModeHandler } = {
     [BoardMode.DRAW]: new DrawHandler(this),
     [BoardMode.SELECT]: new SelectHandler(this),
+    [BoardMode.MOVE]: new MoveHandler(this),
   };
   zoomLevel = 1;
   stagePosition = {x: 0, y: 0};
+  cursorService = new CursorService(this);
   constructor(private container: HTMLDivElement, public boardId: string) {
     this.stage = new Konva.Stage({
       container: this.container,
@@ -83,6 +86,8 @@ export class Board {
         if (!node) return;
         applyAttrs(node, attrs);
       })
+    } else if (payload.type === "SET_CURSOR") {
+      this.cursorService.setCursor(payload.data);
     }
   };
   sendBoardObject = async (obj: BoardObject, id: string) => {
@@ -137,6 +142,7 @@ export class Board {
   setZoomLevel = (value: number) => {
     this.zoomLevel = value;
     this.stage.scale({x: value, y: value});
+    this.cursorService.onStageZoomChange();
   }
   setStagePosition = (x: number, y: number) => {
     this.stagePosition = {x, y};
@@ -146,7 +152,7 @@ export class Board {
     this.setZoomLevel(this.zoomLevel + 0.1);
   }
   zoomOut = () => {
-    this.setZoomLevel(this.zoomLevel - 0.1);
+    this.setZoomLevel(Math.max(0.1, this.zoomLevel - 0.1));
   }
   moveX = (value: number) => {
     const {x, y} = this.stagePosition;
@@ -158,6 +164,16 @@ export class Board {
   }
   run = () => {
     this.draw();
+    const onContainerSizeChange = (entries: ResizeObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.target !== this.container) return;
+        const {width, height} = entry.contentRect;
+        this.stage.size({width, height});
+      })
+    }
+    const containerSizeObserver = new ResizeObserver(onContainerSizeChange);
+    containerSizeObserver.observe(this.container);
+    this.cursorService.init();
   };
 }
 

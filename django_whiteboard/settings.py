@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
+    'graphene_django',
+    'identity',
     'channels',
     'whiteboard',
 ]
@@ -134,6 +136,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ASGI_APPLICATION = "django_whiteboard.asgi.application"
 
+AUTH_USER_MODEL = 'identity.User'
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -141,4 +145,8 @@ CHANNEL_LAYERS = {
             "hosts": [("localhost", 6379)],
         },
     },
+}
+
+GRAPHENE = {
+    'SCHEMA': 'django_whiteboard.schema.schema' # Where your Graphene schema lives
 }

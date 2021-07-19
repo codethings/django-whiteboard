@@ -1,8 +1,9 @@
 from urllib.parse import parse_qsl
-from .models import Board, BoardObject
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+
+from .models import Board, BoardObject
 
 
 class BoardConsumer(AsyncJsonWebsocketConsumer):

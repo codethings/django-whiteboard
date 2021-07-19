@@ -1,0 +1,10 @@
+.board-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+    .board-item {
+        background-color: white;
+        border-radius: 7px;
+        padding: 1rem;
+    }
+}

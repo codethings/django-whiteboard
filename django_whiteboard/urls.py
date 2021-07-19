@@ -15,17 +15,39 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from graphene_django.views import GraphQLView
 
 from whiteboard.views import add_board_object, set_objects_attrs
 
-def preview(request, id=1):
+
+def app_view(request, *args, **kwargs):
     from django.shortcuts import render
-    return render(request, "index.html", {"board_id": id})
+
+    return render(request, "index.html")
+
+
+def logout_view(request):
+    from django.http import HttpResponseRedirect
+    from django.contrib.auth import logout
+
+    logout(request)
+    return HttpResponseRedirect("/")
+
 
 urlpatterns = [
-    path('', preview),
-    path('b/<int:id>', preview),
-    path('add-object', add_board_object),
-    path('set-objects-attrs', set_objects_attrs),
-    path('admin/', admin.site.urls),
+    path("", app_view),
+    path("b/<int:id>", app_view),
+    path("add-object", add_board_object),
+    path("set-objects-attrs", set_objects_attrs),
+    path("logout", logout_view),
+    path("admin/", admin.site.urls),
 ]
+
+graphql_view = GraphQLView.as_view(graphiql=True)
+graphql_view.csrf_exempt = True
+
+urlpatterns += [
+    path("graphql", graphql_view),
+]
+
+urlpatterns += [path("board/<str:board_id>", app_view)]

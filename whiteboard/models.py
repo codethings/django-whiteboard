@@ -1,11 +1,22 @@
 from django.db import models
+from django.conf import settings
 
 # Create your models here.
 
 
 class Board(models.Model):
+    users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="users", through="BoardUser"
+    )
+    title = models.CharField(max_length=128)
+
     def to_json(self):
         return {"objects": [obj.to_json() for obj in self.board_objects.all()]}
+
+
+class BoardUser(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    board = models.ForeignKey(Board, on_delete=models.CASCADE)
 
 
 class BoardObject(models.Model):

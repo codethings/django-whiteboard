@@ -16,7 +16,8 @@ export default class MoveHandler implements ModeHandler {
   onWheel = (event: Konva.KonvaEventObject<WheelEvent>) => {
     const stage = this.board.stage;
     const oldScale = stage.scaleX();
-    var pointer = stage.getPointerPosition();
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
     if (event.evt.deltaY > 0) {
       this.board.zoomIn();
     } else if (event.evt.deltaY < 0) {
@@ -33,6 +34,7 @@ export default class MoveHandler implements ModeHandler {
       y: pointer.y - mousePointTo.y * newScale,
     };
     stage.position(newPos);
+    event.evt.preventDefault();
   };
   onMouseDown = () => {
     const { x, y } = this.board.stage.getPointerPosition();

@@ -18,6 +18,7 @@ from django.urls import path
 from graphene_django.views import GraphQLView
 
 from whiteboard.views import add_board_object, set_objects_attrs
+from .graphql_view import graphql_view
 
 
 def app_view(request, *args, **kwargs):
@@ -42,9 +43,6 @@ urlpatterns = [
     path("logout", logout_view),
     path("admin/", admin.site.urls),
 ]
-
-graphql_view = GraphQLView.as_view(graphiql=True)
-graphql_view.csrf_exempt = True
 
 urlpatterns += [
     path("graphql", graphql_view),

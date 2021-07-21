@@ -11,23 +11,34 @@ import "./styles/index.scss";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import LoginPage from "./components/auth/loginPage";
 
+const LayoutWithTopNav: React.FC<React.PropsWithChildren<unknown>> = ({
+  children,
+}) => {
+  return (
+    <div>
+      <TopNav />
+      <div className="mt-4"></div>
+      {children}
+    </div>
+  );
+};
+
 const App = () => {
   const viewer = React.useContext(AuthContext);
   const user = viewer?.user;
   if (user) {
     return (
       <Router>
-        <TopNav />
-        <div style={{ marginTop: "1rem" }}>
           <Switch>
             <Route path="/" exact>
-              <UserDashboard />
+              <LayoutWithTopNav>
+                <UserDashboard />
+              </LayoutWithTopNav>
             </Route>
             <Route path="/board/:boardId">
               <Board />
             </Route>
           </Switch>
-        </div>
       </Router>
     );
   } else {

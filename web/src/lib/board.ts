@@ -36,7 +36,7 @@ export class Board {
   zoomLevel = 1;
   stagePosition = {x: 0, y: 0};
   cursorService = new CursorService(this);
-  constructor(private container: HTMLDivElement, public boardId: string) {
+  constructor(public container: HTMLDivElement, public boardId: string) {
     this.stage = new Konva.Stage({
       container: this.container,
       width: 600,
@@ -48,6 +48,7 @@ export class Board {
     this.stage.add(this.trLayer);
     this.trLayer.add(this.tr);
     this.layer.draw();
+    this.layer.add(new Konva.Text({text: "Loading"}))
     const scheme = window.location.protocol === "http:" ? "ws" : "wss";
     this.socket = new ReconnectingWebSocket(
       `${scheme}://${window.location.host}/board/${this.boardId}?sessionId=${this.sessionId}`
@@ -72,6 +73,7 @@ export class Board {
     const data = event.data;
     const payload = JSON.parse(data) as ReceivedWebsocketMessage;
     if (payload.type === "INITIAL_DATA") {
+      this.layer.destroyChildren()
       for (const obj of payload.data.objects) {
         this.addShapeToLayer(objToKonva(obj));
       }

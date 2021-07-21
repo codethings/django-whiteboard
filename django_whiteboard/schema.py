@@ -20,10 +20,13 @@ class Viewer(whiteboard_schema.Query, graphene.ObjectType):
 
 class Query(graphene.ObjectType):
     viewer = graphene.Field(Viewer)
+    node = graphene.Field(graphene.relay.Node, args={"id": graphene.ID(required=True)})
 
     def resolve_viewer(self, info):
         return Viewer()
 
+    def resolve_node(self, info, *, id):
+        return graphene.relay.Node.get_node_from_global_id(info, id)
 
 class Mutation(
     identity_schema.Mutation, whiteboard_schema.Mutation, graphene.ObjectType

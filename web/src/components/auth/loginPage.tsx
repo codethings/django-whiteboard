@@ -81,7 +81,10 @@ function LoginPage() {
     }
   });
   return (
-    <Form onSubmit={onSubmit}>
+    <Form onSubmit={onSubmit} className="auth-form">
+      <div className="title">
+        Django Whiteboard
+      </div>
       <Form.Group>
         <Form.Label>Username</Form.Label>
         <Form.Control {...register("username")} />
@@ -98,7 +101,7 @@ function LoginPage() {
       )}
       <div className="mt-3">
         <Button variant="primary" type="submit">
-          Submit
+          {mode === "reg" ? "Create user" : "Login"}
         </Button>
         <Button variant="link" type="button" onClick={toggleMode}>
           {mode === "login" ? "Create user" : "Login"}

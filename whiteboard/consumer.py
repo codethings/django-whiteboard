@@ -3,7 +3,7 @@ from urllib.parse import parse_qsl
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from .models import Board, BoardObject
+from .models import Board, BoardObject, BoardUser
 
 
 class BoardConsumer(AsyncJsonWebsocketConsumer):
@@ -12,6 +12,8 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
         self.session_id = dict(parse_qsl(self.scope["query_string"].decode()))[
             "sessionId"
         ]
+        if not await self.has_access():
+            await self.close()
         await self.accept()
         await self.send_initial_data()
         await self.channel_layer.group_add(self.group_name, self.channel_name)
@@ -25,6 +27,13 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
         if not self.board_id:
             raise ValueError("No board id")
         return self.get_group_name(self.board_id)
+
+    @database_sync_to_async
+    def has_access(self):
+        user = self.scope.get("user")
+        if not user.is_authenticated:
+            return False
+        return BoardUser.objects.filter(user=user, board_id=self.board_id).exists()
 
     async def disconnect(self, _code):
         await self.channel_layer.group_send(

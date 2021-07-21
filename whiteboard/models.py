@@ -13,6 +13,9 @@ class Board(models.Model):
     def to_json(self):
         return {"objects": [obj.to_json() for obj in self.board_objects.all()]}
 
+    def has_access(self, user):
+        return BoardUser.objects.filter(board=self, user=user).exists()
+
 
 class BoardUser(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

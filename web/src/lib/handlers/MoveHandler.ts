@@ -12,6 +12,7 @@ export default class MoveHandler implements ModeHandler {
     this.board.stage.on("mousemove", this.onMouseMove);
     this.board.stage.on("mouseup mouseleave", this.onMouseUp);
     this.board.stage.on("wheel", this.onWheel);
+    this.board.container.classList.add("moving");
   };
   onWheel = (event: Konva.KonvaEventObject<WheelEvent>) => {
     const stage = this.board.stage;
@@ -37,6 +38,7 @@ export default class MoveHandler implements ModeHandler {
     event.evt.preventDefault();
   };
   onMouseDown = () => {
+    this.board.container.classList.add("active");
     const { x, y } = this.board.stage.getPointerPosition();
     const { x: boardX, y: boardY } = this.board.stage.position();
     this.initialPosition = { x, y, boardX, boardY };
@@ -50,6 +52,7 @@ export default class MoveHandler implements ModeHandler {
     this.board.stage.position({ x: boardX + diffX, y: boardY + diffY });
   };
   onMouseUp = () => {
+    this.board.container.classList.remove("active");
     this.initialPosition = null;
   };
   exit = () => {
@@ -57,5 +60,6 @@ export default class MoveHandler implements ModeHandler {
     this.board.stage.off("mousemove", this.onMouseMove);
     this.board.stage.off("mouseup mouseleave", this.onMouseUp);
     this.board.stage.off("wheel", this.onWheel);
+    this.board.container.classList.remove("moving");
   };
 }

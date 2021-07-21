@@ -12,6 +12,9 @@ const TopNav = () => {
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/">Home</Nav.Link>
           </Nav>
+          <Nav>
+            <Nav.Link href="/logout">Logout</Nav.Link>
+          </Nav>
         </Navbar.Collapse>
       </Container>
     </Navbar>

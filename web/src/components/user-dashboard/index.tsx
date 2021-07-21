@@ -63,7 +63,7 @@ function UserDashboard() {
     }).catch(console.error)
   }, [createBoard, history])
   const { data, loading } = useQuery<UserDashboardQuery>(userDashboardQuery);
-  if (loading) return "loading...";
+  if (loading) return <>loading...</>;
   if (!data?.viewer?.boards.length) {
     return (
       <Container>

@@ -48,4 +48,7 @@ urlpatterns += [
     path("graphql", graphql_view),
 ]
 
-urlpatterns += [path("board/<str:board_id>", app_view)]
+urlpatterns += [
+    path("board/<str:board_id>", app_view),
+    path("auth", app_view)
+]

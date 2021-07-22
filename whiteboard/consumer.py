@@ -31,9 +31,7 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def has_access(self):
         user = self.scope.get("user")
-        if not user.is_authenticated:
-            return False
-        return BoardUser.objects.filter(user=user, board_id=self.board_id).exists()
+        return Board.check_access(board_id=self.board_id, user_id=user.pk)
 
     async def disconnect(self, _code):
         await self.channel_layer.group_send(

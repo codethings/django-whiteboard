@@ -20,7 +20,7 @@ def check_board_access(view_func):
         payload = request.payload
         board_id = payload["boardId"]
         has_access = await database_sync_to_async(
-            lambda: BoardUser.objects.filter(user=user, board_id=board_id).exists()
+            lambda: Board.check_access(board_id=board_id, user_id=user.pk)
         )()
         if not has_access:
             return HttpResponseForbidden()

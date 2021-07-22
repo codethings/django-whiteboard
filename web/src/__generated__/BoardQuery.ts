@@ -18,6 +18,7 @@ export interface BoardQuery_board_Board {
    */
   id: string;
   title: string;
+  public: boolean;
 }
 
 export type BoardQuery_board = BoardQuery_board_User | BoardQuery_board_Board;

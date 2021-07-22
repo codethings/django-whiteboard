@@ -8,7 +8,12 @@ import TopNav from "./components/topNav";
 import Board from "./components/board/";
 
 import "./styles/index.scss";
-import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Redirect,
+  Route,
+  Switch,
+} from "react-router-dom";
 import LoginPage from "./components/auth/loginPage";
 
 const LayoutWithTopNav: React.FC<React.PropsWithChildren<unknown>> = ({
@@ -28,21 +33,29 @@ const App = () => {
   const user = viewer?.user;
   if (user) {
     return (
-      <Router>
-          <Switch>
-            <Route path="/" exact>
-              <LayoutWithTopNav>
-                <UserDashboard />
-              </LayoutWithTopNav>
-            </Route>
-            <Route path="/board/:boardId">
-              <Board />
-            </Route>
-          </Switch>
-      </Router>
+      <Switch>
+        <Route path="/" exact>
+          <LayoutWithTopNav>
+            <UserDashboard />
+          </LayoutWithTopNav>
+        </Route>
+        <Route path="/board/:boardId">
+          <Board />
+        </Route>
+      </Switch>
     );
   } else {
-    return <LoginPage />;
+    return (
+      <Switch>
+        <Route path="/board/:boardId" exact>
+          <Board />
+        </Route>
+        <Route path="/auth">
+          <LoginPage />
+        </Route>
+        <Redirect to="/auth" />
+      </Switch>
+    );
   }
 };
 
@@ -50,7 +63,9 @@ const Root = () => {
   return (
     <ApolloProvider client={client}>
       <AuthProvider>
-        <App />
+        <Router>
+          <App />
+        </Router>
       </AuthProvider>
     </ApolloProvider>
   );

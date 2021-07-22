@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
 
 # Create your models here.
@@ -9,12 +10,24 @@ class Board(models.Model):
         settings.AUTH_USER_MODEL, related_name="users", through="BoardUser"
     )
     title = models.CharField(max_length=128)
+    public = models.BooleanField(default=False)
 
     def to_json(self):
         return {"objects": [obj.to_json() for obj in self.board_objects.all()]}
 
+    @classmethod
+    def check_access(cls, *, board_id, user_id, include_public=True):
+        conditions = Q(users=user_id)
+        if include_public:
+            conditions |= Q(public=True)
+        return (
+            cls.objects.filter(conditions)
+            .filter(pk=board_id)
+            .exists()
+        )
+
     def has_access(self, user):
-        return BoardUser.objects.filter(board=self, user=user).exists()
+        return Board.check_access(board_id=self.pk, user_id=user.id)
 
 
 class BoardUser(models.Model):

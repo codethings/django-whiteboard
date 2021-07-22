@@ -7,7 +7,7 @@ from . import models
 class Board(DjangoObjectType):
     class Meta:
         model = models.Board
-        fields = ("title",)
+        fields = ("title", "public")
         interfaces = (graphene.relay.Node,)
 
     @classmethod
@@ -44,5 +44,26 @@ class CreateBoard(graphene.ClientIDMutation):
         board.users.add(user)
         return cls(board=board)
 
+
+class SetBoardPublic(graphene.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        value = graphene.Boolean(required=True)
+
+    board = graphene.Field(Board, required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, *, id, value):
+        board = graphene.relay.Node.get_node_from_global_id(info, id, Board)
+        if not models.Board.check_access(
+            board_id=board.pk, user_id=info.context.user.pk, include_public=False
+        ):
+            return cls(board=board)
+        board.public = value
+        board.save(update_fields=['public'])
+        return cls(board=board)
+
+
 class Mutation(graphene.ObjectType):
     create_board = CreateBoard.Field()
+    set_board_public = SetBoardPublic.Field()

@@ -25,6 +25,12 @@ export interface LoginInput {
   clientMutationId?: string | null;
 }
 
+export interface SetBoardPublicInput {
+  id: string;
+  value: boolean;
+  clientMutationId?: string | null;
+}
+
 //==============================================================
 // END Enums and Input Objects
 //==============================================================

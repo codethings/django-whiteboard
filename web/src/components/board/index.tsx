@@ -13,6 +13,7 @@ const boardQuery = gql`
       ... on Board {
         id
         title
+        public
       }
     }
   }
@@ -27,11 +28,12 @@ const Board = () => {
     { variables: { id: boardId } }
   );
   if (loading) return <>Loading</>;
-  if (data && !data.board) {
+  const board = data?.board;
+  if (!board) {
     return <>No Access</>
   }
-  const id = atob(boardId).split(":")[1];
-  return <ReactBoard boardId={id} />;
+  if (board.__typename !== "Board") return null;
+  return <ReactBoard board={board} />;
 };
 
 export default Board;

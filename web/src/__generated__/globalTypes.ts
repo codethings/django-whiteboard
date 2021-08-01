@@ -7,6 +7,14 @@
 // START Enums and Input Objects
 //==============================================================
 
+/**
+ * An enumeration.
+ */
+export enum BoardUserRole {
+  OWNER = "OWNER",
+  SHARED = "SHARED",
+}
+
 export interface CreateBoardInput {
   title: string;
   clientMutationId?: string | null;
@@ -27,6 +35,13 @@ export interface LoginInput {
 
 export interface SetBoardPublicInput {
   id: string;
+  value: boolean;
+  clientMutationId?: string | null;
+}
+
+export interface ShareBoardByUsernameInput {
+  id: string;
+  username: string;
   value: boolean;
   clientMutationId?: string | null;
 }

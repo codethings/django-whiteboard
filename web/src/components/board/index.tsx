@@ -14,6 +14,14 @@ const boardQuery = gql`
         id
         title
         public
+        viewerRole
+        boardUsers {
+          id
+          user {
+            username
+          }
+          role
+        }
       }
     }
   }

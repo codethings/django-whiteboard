@@ -5,6 +5,9 @@ import { Link } from "react-router-dom";
 import { Board } from "../../lib/board";
 import { BoardMode } from "../../lib/types";
 
+import { BoardQuery_board_Board } from "../../__generated__/BoardQuery";
+import { BoardUserRole } from "../../__generated__/globalTypes";
+
 import {
   FaPencilAlt,
   FaMousePointer,
@@ -22,11 +25,7 @@ const OP_MODE_BUTTONS: [string, React.ReactNode, BoardMode][] = [
   ["Move", <FaHandPaper />, BoardMode.MOVE],
 ];
 
-function ReactBoard({
-  board,
-}: {
-  board: { id: string; title: string; public: boolean };
-}) {
+function ReactBoard({ board }: { board: BoardQuery_board_Board }) {
   // const boardId = board.id;
   const boardIntId = atob(board.id).split(":")[1];
   const [opMode, setOpMode] = React.useState<BoardMode>(BoardMode.DRAW);
@@ -97,9 +96,11 @@ function ReactBoard({
             <Button title="Home" as={Link} to="/">
               <FaHome />
             </Button>
-            <Button title="Share" onClick={toggleShareModal}>
-              <FaShareAlt />
-            </Button>
+            {board.viewerRole === BoardUserRole.OWNER && (
+              <Button title="Share" onClick={toggleShareModal}>
+                <FaShareAlt />
+              </Button>
+            )}
           </ButtonGroup>
         </ButtonToolbar>
       </div>

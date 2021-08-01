@@ -42,6 +42,7 @@ const App = () => {
         <Route path="/board/:boardId">
           <Board />
         </Route>
+        <Redirect from="/auth" to="/" />
       </Switch>
     );
   } else {

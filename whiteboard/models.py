@@ -16,23 +16,28 @@ class Board(models.Model):
         return {"objects": [obj.to_json() for obj in self.board_objects.all()]}
 
     @classmethod
-    def check_access(cls, *, board_id, user_id, include_public=True):
+    def check_access(
+        cls, *, board_id, user_id, include_public=True, include_shared=True
+    ):
         conditions = Q(users=user_id)
         if include_public:
             conditions |= Q(public=True)
-        return (
-            cls.objects.filter(conditions)
-            .filter(pk=board_id)
-            .exists()
-        )
+        if not include_shared:
+            conditions = conditions & Q(boarduser__role=BoardUser.BoardUserRole.owner)
+        return cls.objects.filter(conditions).filter(pk=board_id).exists()
 
     def has_access(self, user):
         return Board.check_access(board_id=self.pk, user_id=user.id)
 
 
 class BoardUser(models.Model):
+    class BoardUserRole(models.TextChoices):
+        owner = "owner"
+        shared = "shared"
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     board = models.ForeignKey(Board, on_delete=models.CASCADE)
+    role = models.CharField(max_length=12, choices=BoardUserRole.choices)
 
 
 class BoardObject(models.Model):

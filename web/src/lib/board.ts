@@ -21,8 +21,6 @@ export class Board {
   layer = new Konva.Layer({});
   drawingLayer = new Konva.Layer();
   pendingLayer = new Konva.Layer();
-  trLayer = new Konva.Layer();
-  tr = new Konva.Transformer();
   currentDrawingObject?: BoardObject;
   socket: ReconnectingWebSocket;
   sendingObjects = new Map<string, BoardObject>();
@@ -45,8 +43,6 @@ export class Board {
     this.stage.add(this.layer);
     this.stage.add(this.drawingLayer);
     this.stage.add(this.pendingLayer);
-    this.stage.add(this.trLayer);
-    this.trLayer.add(this.tr);
     this.layer.draw();
     this.layer.add(new Konva.Text({text: "Loading"}))
     const scheme = window.location.protocol === "http:" ? "ws" : "wss";
@@ -112,7 +108,9 @@ export class Board {
   };
   sendCurrentDrawingObject = async () => {
     const obj = this.currentDrawingObject;
-    this.currentDrawingObject = null;
+    if (!obj) return;
+    this.currentDrawingObject = undefined;
+    if (obj.type === "path" && obj.points.length < 2) return;
     const id = generateId();
     try {
       this.sendingObjects.set(id, obj);

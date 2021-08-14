@@ -23,8 +23,8 @@ export default class SelectHandler implements ModeHandler {
     this.board.stage.on("mouseup touchend", this.onMouseUp);
     this.board.stage.add(this.trLayer);
     this.tr.on("transformend", this.onTransformEnd);
-    this.tr.on("transform", this.onTransform);
     this.board.stage.on("dragend", this.onTransformEnd);
+    this.board.stage.on("dragstart", this.onDragStart);
     this.board.layer.children!.forEach((shape) => {
       shape.draggable(true);
     });
@@ -35,8 +35,8 @@ export default class SelectHandler implements ModeHandler {
     this.board.stage.off("mousemove touchmove", this.onMouseMove);
     this.board.stage.off("mouseup touchend", this.onMouseUp);
     this.board.stage.off("dragend", this.onTransformEnd);
+    this.board.stage.off("dragstart", this.onDragStart);
     this.tr.off("transformend", this.onTransformEnd);
-    this.tr.off("transform", this.onTransform);
     this.trLayer.remove();
     this.board.layer.children!.forEach((shape) => {
       shape.draggable(false);
@@ -46,25 +46,16 @@ export default class SelectHandler implements ModeHandler {
   processAddedShape = (shape: Konva.Shape) => {
     shape.draggable(true);
   };
-  onTransform = () => {
-    const nodes = this.tr.nodes();
-    nodes.forEach((node) => {
-      const rect = this.boundingRects[node.id()];
-      if (rect) {
-        // const transform = node.getAbsoluteTransform();
-        // Object.entries(transform.decompose()).forEach(([k, v]) => {
-        //   console.log(rect, k, v)
-        // })
-        rect.destroy();
-        this.drawBoundingRect(node);
-      }
-    });
-  };
+  onDragStart = () => {
+    this.selectionRect.visible(false);
+    this.setSelectedShapes([]);
+  }
   onTransformEnd = () => {
     const nodes = this.tr.nodes();
     // [[id, {transform: [number,..]}]]
     const updates: [string, BoardObjectAttrs][] = [];
     for (const node of nodes) {
+      if (!node.id()) continue;
       updates.push([node.id(), { transform: node.getTransform().m }]);
     }
     fetch("/set-objects-attrs", {
@@ -131,8 +122,12 @@ export default class SelectHandler implements ModeHandler {
 
     const shapes = this.board.layer.children!;
     const box = this.selectionRect.getClientRect();
+    if (box.width === 0 || box.height === 0) return;
     var selected = shapes.filter((shape) => {
-      return Konva.Util.haveIntersection(box, shape.getClientRect());
+      return Konva.Util.haveIntersection(
+        box,
+        shape.getClientRect()
+      );
     });
     this.setSelectedShapes(selected);
   };
@@ -152,8 +147,8 @@ export default class SelectHandler implements ModeHandler {
   };
 
   setSelectedShapes = (shapes: (Konva.Shape | Konva.Group)[]) => {
-    this.tr.nodes(shapes);
     this.setBoundingRects(shapes);
+    this.tr.nodes([...shapes, ...Object.values(this.boundingRects)]);
   };
 
   setBoundingRects = (shapes: (Konva.Shape | Konva.Group)[]) => {
@@ -184,6 +179,7 @@ export default class SelectHandler implements ModeHandler {
 
   drawBoundingRect = (shape: Konva.Node) => {
     const { x, y, height, width } = shape.getClientRect({
+      // @ts-ignore
       relativeTo: this.board.stage,
     });
     const rect = new Konva.Rect({

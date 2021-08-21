@@ -10,8 +10,9 @@ export default class SelectHandler implements ModeHandler {
   });
   selectionRectCoords: [number, number, number, number] = [0, 0, 0, 0];
   trLayer = new Konva.Layer();
-  tr = new Konva.Transformer();
+  tr = new Konva.Transformer({shouldOverdrawWholeArea: true});
   boundingRects: { [key: string]: Konva.Rect } = {};
+  draggingTr = false;
   constructor(private board: Board) {
     this.trLayer.add(this.tr);
     this.trLayer.add(this.selectionRect);
@@ -23,7 +24,9 @@ export default class SelectHandler implements ModeHandler {
     this.board.stage.on("mouseup touchend", this.onMouseUp);
     this.board.stage.add(this.trLayer);
     this.tr.on("transformend", this.onTransformEnd);
-    this.board.stage.on("dragend", this.onTransformEnd);
+    this.tr.on("dragstart", this.onTrDragStart);
+    this.tr.on("dragend", this.onTrDragEnd);
+    this.board.stage.on("dragend", this.onDragEnd);
     this.board.stage.on("dragstart", this.onDragStart);
     this.board.layer.children!.forEach((shape) => {
       shape.draggable(true);
@@ -34,9 +37,11 @@ export default class SelectHandler implements ModeHandler {
     this.board.stage.off("mousedown touchstart", this.onMouseDown);
     this.board.stage.off("mousemove touchmove", this.onMouseMove);
     this.board.stage.off("mouseup touchend", this.onMouseUp);
-    this.board.stage.off("dragend", this.onTransformEnd);
-    this.board.stage.off("dragstart", this.onDragStart);
     this.tr.off("transformend", this.onTransformEnd);
+    this.tr.off("dragstart", this.onTrDragStart);
+    this.tr.off("dragend", this.onTrDragEnd);
+    this.board.stage.off("dragend", this.onDragEnd);
+    this.board.stage.off("dragstart", this.onDragStart);
     this.trLayer.remove();
     this.board.layer.children!.forEach((shape) => {
       shape.draggable(false);
@@ -46,12 +51,7 @@ export default class SelectHandler implements ModeHandler {
   processAddedShape = (shape: Konva.Shape) => {
     shape.draggable(true);
   };
-  onDragStart = () => {
-    this.selectionRect.visible(false);
-    this.setSelectedShapes([]);
-  }
-  onTransformEnd = () => {
-    const nodes = this.tr.nodes();
+  sendObjectTransformData = (nodes: Konva.Node[]) => {
     // [[id, {transform: [number,..]}]]
     const updates: [string, BoardObjectAttrs][] = [];
     for (const node of nodes) {
@@ -76,6 +76,26 @@ export default class SelectHandler implements ModeHandler {
       .then((data) => {
         return console.log(data);
       });
+  }
+  onTrDragStart = () => {
+    this.draggingTr = true;
+  }
+  onTrDragEnd = (event: any) => {
+    this.draggingTr = false;
+    this.sendObjectTransformData(this.tr.nodes());
+  }
+  onDragStart = (event: Konva.KonvaEventObject<DragEvent>) => {
+    if (!this.draggingTr) {
+      this.selectionRect.visible(false);
+      this.setSelectedShapes([]);
+    }
+  }
+  onDragEnd = (event: Konva.KonvaEventObject<DragEvent>) => {
+    if (this.tr.nodes().length) return;
+    this.sendObjectTransformData([event.target]);
+  }
+  onTransformEnd = () => {
+    this.sendObjectTransformData(this.tr.nodes())
   };
   onMouseDown = () => {
     if (this.tr.nodes().length) {
@@ -149,6 +169,7 @@ export default class SelectHandler implements ModeHandler {
   setSelectedShapes = (shapes: (Konva.Shape | Konva.Group)[]) => {
     this.setBoundingRects(shapes);
     this.tr.nodes([...shapes, ...Object.values(this.boundingRects)]);
+    this.tr.moveToTop();
   };
 
   setBoundingRects = (shapes: (Konva.Shape | Konva.Group)[]) => {

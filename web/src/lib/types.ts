@@ -29,9 +29,13 @@ export type ReceivedWebsocketMessage =
       data: { objectsAttrs: { [key: string]: BoardObjectAttrs } };
     }
   | {
-    type: "SET_CURSOR";
-    data: RemoteCursor
-  };
+      type: "SET_CURSOR";
+      data: RemoteCursor;
+    }
+  | {
+      type: "REMOVE_OBJECTS";
+      data: { removedObjectIds: string[] };
+    };
 
 export type ModeHandler = {
   enter: () => void;

@@ -77,6 +77,28 @@ async def set_objects_attrs(request):
     return JsonResponse({"ok": True})
 
 
+@expect_json_and_session_id
+@check_board_access
+async def remove_objects(request):
+    channel_layer = get_channel_layer()
+    payload = request.payload
+    board_id = payload["boardId"]
+    removed_object_ids = payload.get("removedObjectIds", [])
+    await database_sync_to_async(delete_objects_by_id)(board_id, removed_object_ids)
+    await channel_layer.group_send(
+        BoardConsumer.get_group_name(board_id),
+        {
+            "type": "broadcast.changes",
+            "content": {
+                "type": "REMOVE_OBJECTS",
+                "data": {"removedObjectIds": removed_object_ids},
+            },
+            "session_id": request.session_id,
+        },
+    )
+    return JsonResponse({"ok": True})
+
+
 @transaction.atomic()
 def save_objects_attrs(board_id, attrs_by_id):
     board = Board.objects.get(pk=board_id)
@@ -86,3 +108,8 @@ def save_objects_attrs(board_id, attrs_by_id):
     for obj in board_objs_to_update:
         obj.data.update(attrs_by_id[str(obj.pk)])
         obj.save(update_fields=["data"])
+
+
+@transaction.atomic()
+def delete_objects_by_id(board_id, object_ids):
+    BoardObject.objects.filter(board_id=board_id, id__in=object_ids).delete()

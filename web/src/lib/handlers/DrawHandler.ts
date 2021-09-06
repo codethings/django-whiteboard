@@ -4,6 +4,7 @@ import { ModeHandler } from "../types";
 
 export default class DrawHandler implements ModeHandler {
     constructor(private board: Board) { }
+    processAddedShape = () => {}
     enter = () => {
         this.board.stage.on("mousedown", this.onMouseDown);
         this.board.stage.on("mouseup", this.onMouseUp);

@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path
 from graphene_django.views import GraphQLView
 
-from whiteboard.views import add_board_object, set_objects_attrs
+from whiteboard.views import add_board_object, set_objects_attrs, remove_objects
 from .graphql_view import graphql_view
 
 
@@ -40,6 +40,7 @@ urlpatterns = [
     path("b/<int:id>", app_view),
     path("add-object", add_board_object),
     path("set-objects-attrs", set_objects_attrs),
+    path("remove-objects", remove_objects),
     path("logout", logout_view),
     path("admin/", admin.site.urls),
 ]

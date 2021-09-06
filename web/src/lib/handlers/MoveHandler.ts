@@ -7,6 +7,7 @@ export default class MoveHandler implements ModeHandler {
   initialPosition: ({ boardX: number; boardY: number } & Vector2d) | null =
     null;
   constructor(private board: Board) {}
+  processAddedShape = () => {};
   enter = () => {
     this.board.stage.on("mousedown", this.onMouseDown);
     this.board.stage.on("mousemove", this.onMouseMove);
@@ -39,13 +40,13 @@ export default class MoveHandler implements ModeHandler {
   };
   onMouseDown = () => {
     this.board.container.classList.add("active");
-    const { x, y } = this.board.stage.getPointerPosition();
+    const { x, y } = this.board.stage.getPointerPosition()!;
     const { x: boardX, y: boardY } = this.board.stage.position();
     this.initialPosition = { x, y, boardX, boardY };
   };
   onMouseMove = () => {
     if (!this.initialPosition) return;
-    const { x, y } = this.board.stage.getPointerPosition();
+    const { x, y } = this.board.stage.getPointerPosition()!;
     const { boardX, boardY } = this.initialPosition;
     const diffX = x - this.initialPosition.x;
     const diffY = y - this.initialPosition.y;

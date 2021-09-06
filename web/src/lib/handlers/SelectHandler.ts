@@ -10,7 +10,8 @@ export default class SelectHandler implements ModeHandler {
   });
   selectionRectCoords: [number, number, number, number] = [0, 0, 0, 0];
   trLayer = new Konva.Layer();
-  tr = new Konva.Transformer({shouldOverdrawWholeArea: true});
+  tr = new Konva.Transformer({ shouldOverdrawWholeArea: true });
+  rmLayer = new Konva.Layer({ opacity: 0.3 });
   boundingRects: { [key: string]: Konva.Rect } = {};
   draggingTr = false;
   constructor(private board: Board) {
@@ -23,6 +24,7 @@ export default class SelectHandler implements ModeHandler {
     this.board.stage.on("mousemove touchmove", this.onMouseMove);
     this.board.stage.on("mouseup touchend", this.onMouseUp);
     this.board.stage.add(this.trLayer);
+    this.board.stage.add(this.rmLayer);
     this.tr.on("transformend", this.onTransformEnd);
     this.tr.on("dragstart", this.onTrDragStart);
     this.tr.on("dragend", this.onTrDragEnd);
@@ -31,6 +33,7 @@ export default class SelectHandler implements ModeHandler {
     this.board.layer.children!.forEach((shape) => {
       shape.draggable(true);
     });
+    window.addEventListener("keydown", this.onKeyDown);
   };
   exit = () => {
     this.board.stage.off("click tap", this.onClick);
@@ -43,10 +46,12 @@ export default class SelectHandler implements ModeHandler {
     this.board.stage.off("dragend", this.onDragEnd);
     this.board.stage.off("dragstart", this.onDragStart);
     this.trLayer.remove();
+    this.rmLayer.remove();
     this.board.layer.children!.forEach((shape) => {
       shape.draggable(false);
     });
     this.setSelectedShapes([]);
+    window.removeEventListener("keydown", this.onKeyDown);
   };
   processAddedShape = (shape: Konva.Shape) => {
     shape.draggable(true);
@@ -76,26 +81,26 @@ export default class SelectHandler implements ModeHandler {
       .then((data) => {
         return console.log(data);
       });
-  }
+  };
   onTrDragStart = () => {
     this.draggingTr = true;
-  }
+  };
   onTrDragEnd = (event: any) => {
     this.draggingTr = false;
     this.sendObjectTransformData(this.tr.nodes());
-  }
+  };
   onDragStart = (event: Konva.KonvaEventObject<DragEvent>) => {
     if (!this.draggingTr) {
       this.selectionRect.visible(false);
       this.setSelectedShapes([]);
     }
-  }
+  };
   onDragEnd = (event: Konva.KonvaEventObject<DragEvent>) => {
     if (this.tr.nodes().length) return;
     this.sendObjectTransformData([event.target]);
-  }
+  };
   onTransformEnd = () => {
-    this.sendObjectTransformData(this.tr.nodes())
+    this.sendObjectTransformData(this.tr.nodes());
   };
   onMouseDown = () => {
     if (this.tr.nodes().length) {
@@ -144,10 +149,7 @@ export default class SelectHandler implements ModeHandler {
     const box = this.selectionRect.getClientRect();
     if (box.width === 0 || box.height === 0) return;
     var selected = shapes.filter((shape) => {
-      return Konva.Util.haveIntersection(
-        box,
-        shape.getClientRect()
-      );
+      return Konva.Util.haveIntersection(box, shape.getClientRect());
     });
     this.setSelectedShapes(selected);
   };
@@ -160,10 +162,59 @@ export default class SelectHandler implements ModeHandler {
       return;
     }
 
-    if (e.target instanceof Konva.Shape) {
+    if (
+      e.target instanceof Konva.Shape &&
+      // @ts-ignore
+      e.target.parent === this.board.layer
+    ) {
       this.setSelectedShapes([e.target]);
       return;
     }
+  };
+
+  onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Backspace" || e.key === "Delete") {
+      const selectedNodes = this.tr.nodes();
+      if (!selectedNodes.length) return;
+      const removingObjectIds: string[] = [];
+      selectedNodes.forEach((node) => {
+        if (!node.id()) return;
+        this.rmLayer.add(node as Konva.Shape);
+        removingObjectIds.push(node.id());
+      });
+      this.setSelectedShapes([]);
+      fetch("/remove-objects", {
+        method: "POST",
+        body: JSON.stringify({
+          boardId: this.board.boardId,
+          removedObjectIds: removingObjectIds,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "session-id": this.board.sessionId,
+        },
+      }).then((response) => {
+        if (!response.ok) {
+          this.rmLayer.children
+            ?.filter((node) => removingObjectIds.includes(node.id()))
+            .forEach((node) => {
+              this.board.layer.add(node);
+            });
+        } else {
+          this.destroyObjectByIds(removingObjectIds)
+        }
+        return response.json();
+      });
+    }
+  };
+
+  destroyObjectByIds = (ids: string[]) => {
+    this.rmLayer.children
+      ?.concat(this.board.layer.children || [])
+      ?.filter((node) => ids.includes(node.id()))
+      .forEach((node) => {
+        node.destroy();
+      });
   };
 
   setSelectedShapes = (shapes: (Konva.Shape | Konva.Group)[]) => {
